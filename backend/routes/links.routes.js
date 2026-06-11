@@ -7,6 +7,6 @@ router.post('/', authenticate, createShortLink);
 router.get('/my', authenticate, getLinksByUser);
 router.get('/analytics/:link_id', authenticate, analyticsDaily);
 router.get('/analytics/:link_id/devices', authenticate, analyticsDevices);
-router.get('/top/:user_id', authenticate, topLinks);
+router.get('/top', authenticate, topLinks);
 
 module.exports = router;

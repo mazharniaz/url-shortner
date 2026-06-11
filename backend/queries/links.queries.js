@@ -2,7 +2,7 @@ const pool = require('../db');
 
 const createLink = async (userId, originalUrl, shortCode) => {
     const result = await pool.query(
-        `INSERT INTO links (user_id, short_code, original_url) VALUES ($1, $2, $3) RETURNING *`,
+        `INSERT INTO links (user_id, original_url, short_code) VALUES ($1, $2, $3) RETURNING *`,
         [userId, originalUrl, shortCode]
     );
     return result.rows[0];
@@ -31,25 +31,29 @@ const trackClick = async (linkId, metadata) => {
   );
 };
 
-const getAnalytics = async (linkId) => {
+const getAnalytics = async (linkId, userId) => {
   const result = await pool.query(`
     WITH daily_clicks AS (
       SELECT DATE(clicked_at) as date, COUNT(*) as clicks
-      FROM clicks WHERE link_id = $1
+      FROM clicks c
+      JOIN links l ON l.id = c.link_id
+      WHERE c.link_id = $1 AND l.user_id = $2
       GROUP BY DATE(clicked_at) ORDER BY date
     )
     SELECT date, clicks, SUM(clicks) OVER (ORDER BY date) as running_total
     FROM daily_clicks
-  `, [linkId]);
+  `, [linkId, userId]);
   return result.rows;
 };
 
-const getDeviceStats = async (linkId) => {
+const getDeviceStats = async (linkId, userId) => {
   const result = await pool.query(`
     SELECT metadata->>'device' as device, COUNT(*) as count
-    FROM clicks WHERE link_id = $1
+    FROM clicks c
+    JOIN links l ON l.id = c.link_id
+    WHERE c.link_id = $1 AND l.user_id = $2
     GROUP BY metadata->>'device'
-  `, [linkId]);
+  `, [linkId, userId]);
   return result.rows;
 };
 

@@ -25,9 +25,16 @@ const register = async (req, res) => {
 
         const passwordHash = await bcrypt.hash(password, 10);
         const user = await createUser(email, passwordHash);
-        const tokens = generateTokens(user.id);
+        const { accessToken, refreshToken } = generateTokens(user.id);
 
-        res.status(201).json({ user, ...tokens });
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        res.status(201).json({ user, accessToken });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -43,8 +50,16 @@ const login = async (req, res) => {
         const valid = await bcrypt.compare(password, user.password_hash);
         if(!valid) return res.status(401).json({ error: 'Invalid credentials' });
 
-        const tokens = generateTokens(user.id);
-        res.json({ user: { id: user.id, email: user.email, }, ...tokens});
+        const { accessToken, refreshToken } = generateTokens(user.id);
+
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        res.json({ user: { id: user.id, email: user.email, }, accessToken });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -52,15 +67,28 @@ const login = async (req, res) => {
 
 const refresh = async (req, res) => {
     try {
-        const { refreshToken } = req.body;
+        const refreshToken = req.cookies.refreshToken;
         if(!refreshToken) return res.status(401).json({ error: 'No token provided' });
 
         const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-        const tokens = generateTokens(decoded.userId);
-        res.json(tokens);
+        const { accessToken, refreshToken: newRefreshToken } = generateTokens(decoded.userId);
+
+        res.cookie('refreshToken', newRefreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        res.json({ accessToken });
     } catch(err) {
         res.status(401).json({ error: 'Invalid refresh token' });
     }
 };
 
-module.exports = { register, login, refresh };
+const logout = async (req, res) => {
+    res.clearCookie('refreshToken');
+    res.json({ message: 'Logged out' });
+};
+
+module.exports = { register, login, refresh, logout };

@@ -6,7 +6,7 @@ const createShortLink = async (req, res) => {
     const { original_url } = req.body;
     const userId = req.userId; // from middleware
     const shortCode = nanoid(7);
-    const link = await createLink(userId, shortCode, original_url);
+    const link = await createLink(userId, original_url, shortCode);
     res.status(201).json(link);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -42,7 +42,7 @@ const getLinksByUser = async (req, res) => {
 
 const analyticsDaily = async (req, res) => {
   try {
-    const data = await getAnalytics(req.params.link_id);
+    const data = await getAnalytics(req.params.link_id, req.userId);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -51,7 +51,7 @@ const analyticsDaily = async (req, res) => {
 
 const analyticsDevices = async (req, res) => {
   try {
-    const data = await getDeviceStats(req.params.link_id);
+    const data = await getDeviceStats(req.params.link_id, req.userId);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -60,7 +60,7 @@ const analyticsDevices = async (req, res) => {
 
 const topLinks = async (req, res) => {
   try {
-    const data = await getTopLinks(req.params.user_id);
+    const data = await getTopLinks(req.userId);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
