@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import './App.css'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
 function App() {
   return (
-    <div className="bg-blue-500 text-white p-6 text-2xl">
-      Tailwind Working!
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<div className='p-6 text-xl'>Home</div>} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
